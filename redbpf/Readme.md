@@ -1,4 +1,4 @@
-# Redbpf
+# Redbpf Sample
 
 Probe and userland code in Rust.
 
