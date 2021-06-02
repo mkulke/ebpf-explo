@@ -1,4 +1,6 @@
-# ebpf-explo
+# Redbpf
+
+Probe and userland code in Rust.
 
 ## Prepare
 
