@@ -1,3 +1,2 @@
-/ebpf-program/target
-*.swp
 .vagrant
+.*.swp
