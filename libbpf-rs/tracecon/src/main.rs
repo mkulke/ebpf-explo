@@ -1,8 +1,12 @@
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Result};
 use core::time::Duration;
 use libbpf_rs::PerfBufferBuilder;
+use object::Object;
+use object::ObjectSymbol;
 use std::convert::TryInto;
+use std::fs;
 use std::net::Ipv4Addr;
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use structopt::StructOpt;
@@ -16,6 +20,9 @@ struct Command {
     /// verbose output
     #[structopt(long, short)]
     verbose: bool,
+    /// glibc path
+    #[structopt(long, short, default_value = "/lib/x86_64-linux-gnu/libc.so.6")]
+    glibc: String,
 }
 
 fn bump_memlock_rlimit() -> Result<()> {
@@ -29,6 +36,24 @@ fn bump_memlock_rlimit() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn get_symbol_address(so_path: &str, fn_name: &str) -> Result<usize> {
+    let path = Path::new(so_path);
+    let buffer = fs::read(path)?;
+    let file = object::File::parse(buffer.as_slice())?;
+
+    let mut symbols = file.dynamic_symbols();
+    let symbol = symbols
+        .find(|symbol| {
+            if let Ok(name) = symbol.name() {
+                return name == fn_name;
+            }
+            false
+        })
+        .ok_or(anyhow!("symbol not found"))?;
+
+    Ok(symbol.address() as usize)
 }
 
 fn handle_event(_cpu: i32, data: &[u8]) {
@@ -48,7 +73,7 @@ fn handle_event(_cpu: i32, data: &[u8]) {
 fn main() -> Result<()> {
     let opts = Command::from_args();
 
-    let mut skel_builder = MgnsSkelBuilder::default();
+    let mut skel_builder = TraceconSkelBuilder::default();
     if opts.verbose {
         skel_builder.obj_builder.debug(true);
     }
@@ -56,19 +81,17 @@ fn main() -> Result<()> {
     bump_memlock_rlimit()?;
     let open_skel = skel_builder.open()?;
     let mut skel = open_skel.load()?;
-    let _uprobe = skel.progs_mut().getaddrinfo_enter().attach_uprobe(
-        false,
-        -1,
-        "/lib/x86_64-linux-gnu/libc.so.6",
-        0x100930,
-    )?;
+    let address = get_symbol_address(&opts.glibc, "getaddrinfo")?;
 
-    let _uretprobe = skel.progs_mut().getaddrinfo_exit().attach_uprobe(
-        true,
-        -1,
-        "/lib/x86_64-linux-gnu/libc.so.6",
-        0x100930,
-    )?;
+    let _uprobe =
+        skel.progs_mut()
+            .getaddrinfo_enter()
+            .attach_uprobe(false, -1, &opts.glibc, address)?;
+
+    let _uretprobe =
+        skel.progs_mut()
+            .getaddrinfo_exit()
+            .attach_uprobe(true, -1, &opts.glibc, address)?;
 
     let _kprobe = skel
         .progs_mut()
