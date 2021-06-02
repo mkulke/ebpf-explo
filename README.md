@@ -1,4 +1,5 @@
 # eBPF exploration
 
 - [redbpf](redbpf/Readme.md)
-- [libbpf-rs](libbpf-rs/Readme.md)
+- [bcc](bcc/Readme.md)
+- [libbpf-rs](libbpf-rs/README.md)
