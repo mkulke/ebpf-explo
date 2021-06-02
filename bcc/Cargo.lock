@@ -24,6 +24,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bcc-probe"
+version = "0.1.0"
+dependencies = [
+ "bcc",
+ "ctrlc",
+]
+
+[[package]]
 name = "bcc-sys"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -34,14 +42,6 @@ name = "bitflags"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
-
-[[package]]
-name = "bla"
-version = "0.1.0"
-dependencies = [
- "bcc",
- "ctrlc",
-]
 
 [[package]]
 name = "byteorder"
