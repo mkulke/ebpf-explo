@@ -65,7 +65,18 @@ Vagrant.configure("2") do |config|
   # Enable provisioning with a shell script. Additional provisioners such as
   # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
   # documentation for more information about their specific syntax and use.
-  # config.vm.provision "shell", inline: <<-SHELL
-  #   /vagrant/prepare.sh
-  # SHELL
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update -y
+    apt-get install -y \
+      build-essential \
+      curl \
+      libbpf-dev \
+      clang \
+      libelf-dev \
+      linux-tools-$(uname -r)
+    curl https://sh.rustup.rs -sSf | sh -s -- -y
+    bpftool btf dump file \
+      /sys/kernel/btf/vmlinux \
+      format c > /vagrant/src/bpf/vmlinux.h
+  SHELL
 end

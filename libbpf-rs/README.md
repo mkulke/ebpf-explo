@@ -1,6 +1,6 @@
 # tracecon
 
-A eBPF sample application, written in C & Rust using [libbpf-rs](https://github.com/libbpf/libbpf-rs). It will output all TCP connections that have been established on the host as ips and hostnames.
+An eBPF sample application, written in C & Rust using [libbpf-rs](https://github.com/libbpf/libbpf-rs). It will output all TCPv4 connections that have been established on the host as ips and hostnames by probing `tcp_v4_connect` in kernel and glibc's `getaddrinfo` in userland. On a successful host lookup the first result will be stored in a hashmap, which can be used as a lookup table to retrieve a hostname for ip_v4 connections.
 
 ## Requirements
 
@@ -26,8 +26,30 @@ cat /boot/config-$(uname -a) | grep CONFIG_DEBUG_INFO_BTF
 
 ## Build
 
+### Vagrant
+
+eBPF is a low-level technology on the Linux kernel. Docker is not a good fit to build eBPF code on MacOS or Windows environments. On those platforms Docker ships its own kernel (e.g. linuxkit) and the kernel headers of the image might not match the running kernel.
+
+There is a `Vagrantfile` to provision a Ubuntu 20.10 VM including the necessary dependencies to build the project. To install Vagrant with a VirtualBox backend and provision the VM on a MacOS host machine run:
+
+```
+brew cask install virtualbox
+brew cask install vagrant
+vagrant up
+```
+
+Log in to the machine. The current host workdir is mounted to `/vagrant`:
+
+```
+vagrant ssh
+sudo su -
+cd /vagrant
+```
+
+### Cargo
+
 ```bash
-cargo build
+cargo build --release
 ```
 
 ## Run
@@ -35,7 +57,7 @@ cargo build
 Start the program to instrument the eBPF probe and listen to events:
 
 ```bash
-./target/debug/tracecon
+./target/release/tracecon
 ```
 
 In another shell perform some http calls:
